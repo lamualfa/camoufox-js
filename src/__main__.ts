@@ -4,19 +4,28 @@ import { existsSync, rmSync } from "node:fs";
 import { Command } from "commander";
 import { DefaultAddons, maybeDownloadAddons } from "./addons.js";
 import { ALLOW_GEOIP, downloadMMDB, removeMMDB } from "./locale.js";
-import { CamoufoxFetcher, INSTALL_DIR, installedVerStr } from "./pkgman.js";
+import {
+	CamoufoxFetcher,
+	type CamoufoxPaths,
+	getDefaultInstallDir,
+	getDefaultLaunchFile,
+	getDefaultLocalData,
+	installedVerStr,
+} from "./pkgman.js";
 import { launchServer } from "./server.js";
 import { Camoufox } from "./sync_api.js";
 import { getAsBooleanFromENV } from "./utils.js";
 
 class CamoufoxUpdate extends CamoufoxFetcher {
 	currentVerStr: string | null;
+	private customPaths?: CamoufoxPaths;
 
-	private constructor() {
+	private constructor(paths?: CamoufoxPaths) {
 		super();
+		this.customPaths = paths;
 		this.currentVerStr = null;
 		try {
-			this.currentVerStr = installedVerStr();
+			this.currentVerStr = installedVerStr(paths);
 		} catch (error) {
 			if (error instanceof Error && error.name === "FileNotFoundError") {
 				this.currentVerStr = null;
@@ -26,8 +35,8 @@ class CamoufoxUpdate extends CamoufoxFetcher {
 		}
 	}
 
-	static async create(): Promise<CamoufoxUpdate> {
-		const updater = new CamoufoxUpdate();
+	static async create(paths?: CamoufoxPaths): Promise<CamoufoxUpdate> {
+		const updater = new CamoufoxUpdate(paths);
 		await updater.init();
 		return updater;
 	}
@@ -58,14 +67,15 @@ class CamoufoxUpdate extends CamoufoxFetcher {
 		} else {
 			console.log(`Fetching Camoufox binaries...`);
 		}
-		await this.install();
+		await this.install(this.customPaths);
 	}
 
 	async cleanup(): Promise<boolean> {
-		if (!existsSync(INSTALL_DIR)) {
+		const installDir = this.customPaths?.installDir || getDefaultInstallDir();
+		if (!existsSync(installDir)) {
 			return false;
 		}
-		await rmSync(INSTALL_DIR, { recursive: true, force: true });
+		await rmSync(installDir, { recursive: true, force: true });
 		console.log("Camoufox binaries removed!");
 		return true;
 	}
@@ -73,14 +83,39 @@ class CamoufoxUpdate extends CamoufoxFetcher {
 
 const program = new Command();
 
-program.command("fetch").action(async () => {
-	const updater = await CamoufoxUpdate.create();
-	await updater.update();
-	if (ALLOW_GEOIP) {
-		downloadMMDB();
-	}
-	maybeDownloadAddons(DefaultAddons);
-});
+program
+	.command("fetch")
+	.option("-i, --install-dir <path>", "Custom installation directory")
+	.option("-d, --data-dir <path>", "Custom data directory")
+	.option("-l, --launch-file <path>", "Custom launch file path")
+	.action(async (options) => {
+		const customPaths: CamoufoxPaths = {};
+
+		if (options.installDir) {
+			customPaths.installDir = options.installDir;
+		}
+		if (options.dataDir) {
+			customPaths.localData = options.dataDir;
+		}
+		if (options.launchFile) {
+			// Parse launch file option in format "win:exe,mac:app,lin:bin"
+			const launchFiles: { [key: string]: string } = {};
+			options.launchFile.split(",").forEach((file: string) => {
+				const [os, path] = file.split(":");
+				if (os && path) {
+					launchFiles[os.trim()] = path.trim();
+				}
+			});
+			customPaths.launchFile = launchFiles;
+		}
+
+		const updater = await CamoufoxUpdate.create(customPaths);
+		await updater.update();
+		if (ALLOW_GEOIP) {
+			downloadMMDB();
+		}
+		maybeDownloadAddons(DefaultAddons);
+	});
 
 program.command("remove").action(async () => {
 	const updater = await CamoufoxUpdate.create();
@@ -119,9 +154,40 @@ program.command("server").action(async () => {
 	console.log(`To stop the server, press Ctrl+C or close this terminal.`);
 });
 
-program.command("path").action(() => {
-	console.log(INSTALL_DIR);
-});
+program
+	.command("path")
+	.option("-i, --install-dir <path>", "Custom installation directory")
+	.option("-d, --data-dir <path>", "Custom data directory")
+	.option("-l, --launch-file <path>", "Custom launch file path")
+	.action((options) => {
+		const customPaths: CamoufoxPaths = {};
+
+		if (options.installDir) {
+			customPaths.installDir = options.installDir;
+		}
+		if (options.dataDir) {
+			customPaths.localData = options.dataDir;
+		}
+		if (options.launchFile) {
+			// Parse launch file option in format "win:exe,mac:app,lin:bin"
+			const launchFiles: { [key: string]: string } = {};
+			options.launchFile.split(",").forEach((file: string) => {
+				const [os, path] = file.split(":");
+				if (os && path) {
+					launchFiles[os.trim()] = path.trim();
+				}
+			});
+			customPaths.launchFile = launchFiles;
+		}
+
+		const installDir = customPaths.installDir || getDefaultInstallDir();
+		const localData = customPaths.localData || getDefaultLocalData();
+		const launchFile = customPaths.launchFile || getDefaultLaunchFile();
+
+		console.log(`Install Directory: ${installDir}`);
+		console.log(`Data Directory: ${localData}`);
+		console.log(`Launch Files: ${JSON.stringify(launchFile)}`);
+	});
 
 program.command("version").action(async () => {
 	try {
