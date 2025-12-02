@@ -27,17 +27,17 @@ export function confirmPaths(paths: string[]): void {
 	}
 }
 
-export function addDefaultAddons(
+export async function addDefaultAddons(
 	_addonsList: string[],
 	_excludeList: (keyof typeof DefaultAddons)[] = [],
 	_paths?: CamoufoxPaths,
-): void {
+): Promise<void> {
 	// TODO - enable addons
 	/**
 	 * Adds default addons, minus any specified in excludeList, to addonsList
 	 */
 	// const addons = Object.values(DefaultAddons).filter(addon => !excludeList.includes(addon as keyof typeof DefaultAddons));
-	// maybeDownloadAddons(addons, addonsList, _paths);
+	// await maybeDownloadAddons(addons, addonsList, _paths);
 }
 
 /**
@@ -63,11 +63,11 @@ function getAddonPath(addonName: string, paths?: CamoufoxPaths): string {
  * Downloads and extracts addons from a given dictionary to a specified list
  * Skips downloading if the addon is already downloaded
  */
-export function maybeDownloadAddons(
+export async function maybeDownloadAddons(
 	addons: Record<string, string>,
 	addonsList: string[] = [],
 	paths?: CamoufoxPaths,
-): void {
+): Promise<void> {
 	if (getAsBooleanFromENV("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", false)) {
 		console.log(
 			"Skipping addon download due to PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD set!",
@@ -85,7 +85,7 @@ export function maybeDownloadAddons(
 
 		try {
 			fs.mkdirSync(addonPath, { recursive: true });
-			downloadAndExtract(addons[addonName], addonPath, addonName);
+			await downloadAndExtract(addons[addonName], addonPath, addonName);
 			addonsList.push(addonPath);
 		} catch (e) {
 			console.error(`Failed to download and extract ${addonName}: ${e}`);

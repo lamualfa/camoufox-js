@@ -52,11 +52,11 @@ const CACHE_PREFS = {
 	"browser.cache.disk.smart_size.enabled": true,
 };
 
-function getEnvVars(
+async function getEnvVars(
 	configMap: ConfigMap,
 	userAgentOS: string,
 	paths?: CamoufoxPaths,
-): EnvVars {
+): Promise<EnvVars> {
 	const envVars: EnvVars = {};
 	let updatedConfigData: Uint8Array;
 
@@ -104,10 +104,10 @@ interface Property {
 	type: string;
 }
 
-function loadProperties(
+async function loadProperties(
 	filePath?: PathLike,
 	paths?: CamoufoxPaths,
-): Record<string, string> {
+): Promise<Record<string, string>> {
 	let propFile: string;
 	filePath = filePath?.toString();
 	if (filePath) {
@@ -116,16 +116,42 @@ function loadProperties(
 		propFile = getPath("properties.json", paths);
 	}
 
-	const propData = readFileSync(propFile).toString();
-	const propDict: Property[] = JSON.parse(propData);
+	try {
+		const propData = readFileSync(propFile).toString();
+		const propDict: Property[] = JSON.parse(propData);
 
-	return propDict.reduce(
-		(acc, prop) => {
-			acc[prop.property] = prop.type;
-			return acc;
-		},
-		{} as Record<string, string>,
-	);
+		return propDict.reduce(
+			(acc, prop) => {
+				acc[prop.property] = prop.type;
+				return acc;
+			},
+			{} as Record<string, string>,
+		);
+	} catch (error) {
+		if (
+			error instanceof Error &&
+			error.name === "Error" &&
+			error.message.includes("ENOENT")
+		) {
+			console.log("Properties file not found, auto-installing Camoufox...");
+			const { CamoufoxFetcher } = await import("./pkgman.js");
+			const fetcher = new CamoufoxFetcher();
+			await fetcher.install(paths);
+
+			// Retry reading the properties file
+			const propData = readFileSync(propFile).toString();
+			const propDict: Property[] = JSON.parse(propData);
+
+			return propDict.reduce(
+				(acc, prop) => {
+					acc[prop.property] = prop.type;
+					return acc;
+				},
+				{} as Record<string, string>,
+			);
+		}
+		throw error;
+	}
 }
 
 interface ConfigMap {
@@ -136,12 +162,12 @@ interface EnvVars {
 	[key: string]: string | number | boolean;
 }
 
-function validateConfig(
+async function validateConfig(
 	configMap: Record<string, string>,
 	path?: PathLike,
 	paths?: CamoufoxPaths,
-): void {
-	const propertyTypes = loadProperties(path, paths);
+): Promise<void> {
+	const propertyTypes = await loadProperties(path, paths);
 
 	for (const [key, value] of Object.entries(configMap)) {
 		const expectedType = propertyTypes[key];
@@ -593,7 +619,7 @@ export async function launchOptions({
 	}
 
 	// Add the default addons
-	addDefaultAddons(addons, exclude_addons, launch_options.paths);
+	await addDefaultAddons(addons, exclude_addons, launch_options.paths);
 
 	// Confirm all addon paths are valid
 	if (addons.length > 0) {
@@ -607,7 +633,19 @@ export async function launchOptions({
 		ff_version_str = ff_version.toString();
 		LeakWarning.warn("ff_version", i_know_what_im_doing);
 	} else {
-		ff_version_str = installedVerStr(launch_options.paths).split(".", 1)[0];
+		try {
+			ff_version_str = installedVerStr(launch_options.paths).split(".", 1)[0];
+		} catch (error) {
+			if (error instanceof Error && error.name === "FileNotFoundError") {
+				console.log("Camoufox not found, auto-installing...");
+				const { CamoufoxFetcher } = await import("./pkgman.js");
+				const fetcher = new CamoufoxFetcher();
+				await fetcher.install(launch_options.paths);
+				ff_version_str = fetcher.version.split(".", 1)[0];
+			} else {
+				throw error;
+			}
+		}
 	}
 
 	// Generate a fingerprint
@@ -774,11 +812,23 @@ export async function launchOptions({
 	}
 
 	// Validate the config
-	validateConfig(config, executable_path, launch_options.paths);
+	try {
+		await validateConfig(config, executable_path, launch_options.paths);
+	} catch (error) {
+		if (error instanceof Error && error.name === "FileNotFoundError") {
+			console.log("Properties file not found, auto-installing Camoufox...");
+			const { CamoufoxFetcher } = await import("./pkgman.js");
+			const fetcher = new CamoufoxFetcher();
+			await fetcher.install(launch_options.paths);
+			await validateConfig(config, executable_path, launch_options.paths);
+		} else {
+			throw error;
+		}
+	}
 
 	//Prepare environment variables to pass to Camoufox
 	const env_vars = {
-		...getEnvVars(config, targetOS, launch_options.paths),
+		...(await getEnvVars(config, targetOS, launch_options.paths)),
 		...process.env,
 	};
 
@@ -786,7 +836,19 @@ export async function launchOptions({
 	if (executable_path) {
 		executable_path = executable_path.toString();
 	} else {
-		executable_path = launchPath(launch_options.paths);
+		try {
+			executable_path = launchPath(launch_options.paths);
+		} catch (error) {
+			if (error instanceof Error && error.name === "CamoufoxNotInstalled") {
+				console.log("Camoufox not found, auto-installing...");
+				const { CamoufoxFetcher } = await import("./pkgman.js");
+				const fetcher = new CamoufoxFetcher();
+				await fetcher.install(launch_options.paths);
+				executable_path = launchPath(launch_options.paths);
+			} else {
+				throw error;
+			}
+		}
 	}
 
 	const out: PlaywrightLaunchOptions = {
