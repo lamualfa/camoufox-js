@@ -4,7 +4,7 @@ import {
 	type BrowserType,
 	firefox,
 } from "playwright-core";
-
+import type { CamoufoxPaths } from "./pkgman.js";
 import { type LaunchOptions, launchOptions, syncAttachVD } from "./utils.js";
 import { VirtualDisplay } from "./virtdisplay.js";
 
@@ -14,7 +14,11 @@ export async function Camoufox<
 >(
 	launch_options:
 		| LaunchOptions
-		| { headless?: boolean | "virtual"; user_data_dir: UserDataDir } = {},
+		| {
+				headless?: boolean | "virtual";
+				user_data_dir: UserDataDir;
+				paths?: CamoufoxPaths;
+		  } = {},
 ): Promise<ReturnType> {
 	const { headless, user_data_dir, ...launchOptions } = launch_options;
 	return NewBrowser(

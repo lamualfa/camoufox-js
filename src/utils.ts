@@ -29,7 +29,14 @@ import {
 import { publicIP, validIPv4, validIPv6 } from "./ip.js";
 import { geoipAllowed, getGeolocation, handleLocales } from "./locale.js";
 import FONTS from "./mappings/fonts.config.js";
-import { getPath, installedVerStr, launchPath, OS_NAME } from "./pkgman.js";
+import {
+	type CamoufoxPaths,
+	getDefaultLocalData,
+	getPath,
+	installedVerStr,
+	launchPath,
+	OS_NAME,
+} from "./pkgman.js";
 import type { VirtualDisplay } from "./virtdisplay.js";
 import { LeakWarning } from "./warnings.js";
 import { sampleWebGL } from "./webgl/sample.js";
@@ -45,7 +52,11 @@ const CACHE_PREFS = {
 	"browser.cache.disk.smart_size.enabled": true,
 };
 
-function getEnvVars(configMap: ConfigMap, userAgentOS: string): EnvVars {
+function getEnvVars(
+	configMap: ConfigMap,
+	userAgentOS: string,
+	paths?: CamoufoxPaths,
+): EnvVars {
 	const envVars: EnvVars = {};
 	let updatedConfigData: Uint8Array;
 
@@ -71,7 +82,7 @@ function getEnvVars(configMap: ConfigMap, userAgentOS: string): EnvVars {
 	}
 
 	if (OS_NAME === "lin") {
-		const fontconfigPath = getPath(path.join("fontconfig", userAgentOS));
+		const fontconfigPath = getPath(path.join("fontconfig", userAgentOS), paths);
 		envVars.FONTCONFIG_PATH = fontconfigPath;
 	}
 
@@ -93,13 +104,16 @@ interface Property {
 	type: string;
 }
 
-function loadProperties(filePath?: PathLike): Record<string, string> {
+function loadProperties(
+	filePath?: PathLike,
+	paths?: CamoufoxPaths,
+): Record<string, string> {
 	let propFile: string;
 	filePath = filePath?.toString();
 	if (filePath) {
 		propFile = path.join(path.dirname(filePath), "properties.json");
 	} else {
-		propFile = getPath("properties.json");
+		propFile = getPath("properties.json", paths);
 	}
 
 	const propData = readFileSync(propFile).toString();
@@ -125,8 +139,9 @@ interface EnvVars {
 function validateConfig(
 	configMap: Record<string, string>,
 	path?: PathLike,
+	paths?: CamoufoxPaths,
 ): void {
-	const propertyTypes = loadProperties(path);
+	const propertyTypes = loadProperties(path, paths);
 
 	for (const [key, value] of Object.entries(configMap)) {
 		const expectedType = propertyTypes[key];
@@ -457,6 +472,9 @@ export interface LaunchOptions {
 	/** Use a specific WebGL vendor/renderer pair. Passed as a tuple of `[vendor, renderer]`. */
 	webgl_config?: [string, string];
 
+	/** Custom paths configuration for Camoufox. */
+	paths?: CamoufoxPaths;
+
 	/** Additional Firefox launch options. */
 	[key: string]: any;
 }
@@ -575,7 +593,7 @@ export async function launchOptions({
 	}
 
 	// Add the default addons
-	addDefaultAddons(addons, exclude_addons);
+	addDefaultAddons(addons, exclude_addons, launch_options.paths);
 
 	// Confirm all addon paths are valid
 	if (addons.length > 0) {
@@ -589,7 +607,7 @@ export async function launchOptions({
 		ff_version_str = ff_version.toString();
 		LeakWarning.warn("ff_version", i_know_what_im_doing);
 	} else {
-		ff_version_str = installedVerStr().split(".", 1)[0];
+		ff_version_str = installedVerStr(launch_options.paths).split(".", 1)[0];
 	}
 
 	// Generate a fingerprint
@@ -714,9 +732,18 @@ export async function launchOptions({
 		// If the user has provided a specific WebGL vendor/renderer pair, use it
 		let webgl_fp;
 		if (webgl_config) {
-			webgl_fp = await sampleWebGL(targetOS, ...webgl_config);
+			webgl_fp = await sampleWebGL(
+				targetOS,
+				...webgl_config,
+				launch_options.paths,
+			);
 		} else {
-			webgl_fp = await sampleWebGL(targetOS);
+			webgl_fp = await sampleWebGL(
+				targetOS,
+				undefined,
+				undefined,
+				launch_options.paths,
+			);
 		}
 		const { webGl2Enabled, ...webGlConfig } = webgl_fp;
 
@@ -747,11 +774,11 @@ export async function launchOptions({
 	}
 
 	// Validate the config
-	validateConfig(config, executable_path);
+	validateConfig(config, executable_path, launch_options.paths);
 
 	//Prepare environment variables to pass to Camoufox
 	const env_vars = {
-		...getEnvVars(config, targetOS),
+		...getEnvVars(config, targetOS, launch_options.paths),
 		...process.env,
 	};
 
@@ -759,7 +786,7 @@ export async function launchOptions({
 	if (executable_path) {
 		executable_path = executable_path.toString();
 	} else {
-		executable_path = launchPath();
+		executable_path = launchPath(launch_options.paths);
 	}
 
 	const out: PlaywrightLaunchOptions = {

@@ -1,14 +1,16 @@
 import path from "node:path";
 import Database from "better-sqlite3";
-import { OS_ARCH_MATRIX } from "../pkgman.js";
+import {
+	type CamoufoxPaths,
+	getDefaultLocalData,
+	OS_ARCH_MATRIX,
+} from "../pkgman.js";
 
 // Get database path relative to this file
-const DB_PATH = path.join(
-	import.meta.dirname,
-	"..",
-	"data-files",
-	"webgl_data.db",
-);
+function getDbPath(paths?: CamoufoxPaths): string {
+	const localData = paths?.localData || getDefaultLocalData();
+	return path.join(localData.toString(), "webgl_data.db");
+}
 
 interface WebGLData {
 	vendor: string;
@@ -24,12 +26,13 @@ export async function sampleWebGL(
 	os: "win" | "mac" | "lin",
 	vendor?: string,
 	renderer?: string,
+	paths?: CamoufoxPaths,
 ): Promise<WebGLData> {
 	if (!OS_ARCH_MATRIX[os]) {
 		throw new Error(`Invalid OS: ${os}. Must be one of: win, mac, lin`);
 	}
 
-	const db = new Database(DB_PATH);
+	const db = new Database(getDbPath(paths));
 	let query = "";
 	let params: any[] = [];
 
@@ -106,8 +109,10 @@ interface PossiblePairs {
 	[key: string]: Array<VendorRenderer>;
 }
 
-export async function getPossiblePairs(): Promise<PossiblePairs> {
-	const db = new Database(DB_PATH);
+export async function getPossiblePairs(
+	paths?: CamoufoxPaths,
+): Promise<PossiblePairs> {
+	const db = new Database(getDbPath(paths));
 	const result: PossiblePairs = {};
 
 	return new Promise<PossiblePairs>((resolve, reject) => {

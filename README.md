@@ -24,6 +24,28 @@ const browser = await Camoufox({
 const page = await browser.newPage(); // `page` is a Playwright Page instance
 ```
 
+### Custom Paths Configuration
+
+You can customize the paths used by Camoufox by providing a `paths` configuration:
+
+```javascript
+import { Camoufox, type CamoufoxPaths } from 'camoufox-js';
+
+const customPaths: CamoufoxPaths = {
+  installDir: '/custom/install/dir',    // Directory where Camoufox is installed
+  localData: '/custom/data/dir',      // Directory containing local data files
+  launchFile: {                       // Launch file name for each OS
+    win: 'custom.exe',
+    mac: '../MacOS/custom',
+    lin: 'custom-bin'
+  }
+};
+
+const browser = await Camoufox({ paths: customPaths });
+```
+
+All paths are optional - if not provided, Camoufox will use sensible defaults.
+
 Alternatively, if you want to use additional Playwright launch options, you can launch the Camoufox instance like this:
 
 ```javascript
@@ -45,12 +67,20 @@ const page = await browser.newPage(); // `page` is a Playwright Page instance
 Camoufox can be ran as a remote websocket server. It can be accessed from other devices, and languages other than Python supporting the Playwright API.
 
 ```javascript
-import { launchServer } from 'camoufox-js';
+import { launchServer, type CamoufoxPaths } from 'camoufox-js';
 import { firefox } from 'playwright-core';
 
 // you might need to run `npx camoufox-js fetch` to download the browser after installing the package
 
-const server = await launchServer({ port: 8888, ws_path: '/camoufox' });
+const customPaths: CamoufoxPaths = {
+  installDir: '/custom/install/dir'
+};
+
+const server = await launchServer({
+    port: 8888,
+    ws_path: '/camoufox',
+    paths: customPaths
+});
 const browser = await firefox.connect(server.wsEndpoint());
 
 const page = await browser.newPage();
@@ -59,7 +89,7 @@ const page = await browser.newPage();
 // Use your browser instance as usual
 // ...
 
-await browser.close();  
+await browser.close();
 await server.close(); // Close the server when done
 ```
 

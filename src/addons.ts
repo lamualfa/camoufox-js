@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { join } from "node:path";
 import { InvalidAddonPath } from "./exceptions.js";
-import { getPath, unzip, webdl } from "./pkgman.js";
+import { type CamoufoxPaths, getPath, unzip, webdl } from "./pkgman.js";
 import { getAsBooleanFromENV } from "./utils.js";
 
 export const DefaultAddons = {
@@ -30,13 +30,14 @@ export function confirmPaths(paths: string[]): void {
 export function addDefaultAddons(
 	_addonsList: string[],
 	_excludeList: (keyof typeof DefaultAddons)[] = [],
+	_paths?: CamoufoxPaths,
 ): void {
 	// TODO - enable addons
 	/**
 	 * Adds default addons, minus any specified in excludeList, to addonsList
 	 */
 	// const addons = Object.values(DefaultAddons).filter(addon => !excludeList.includes(addon as keyof typeof DefaultAddons));
-	// maybeDownloadAddons(addons, addonsList);
+	// maybeDownloadAddons(addons, addonsList, _paths);
 }
 
 /**
@@ -54,8 +55,8 @@ export async function downloadAndExtract(
 /**
  * Returns a path to the addon
  */
-function getAddonPath(addonName: string): string {
-	return getPath(join("addons", addonName));
+function getAddonPath(addonName: string, paths?: CamoufoxPaths): string {
+	return getPath(join("addons", addonName), paths);
 }
 
 /**
@@ -65,6 +66,7 @@ function getAddonPath(addonName: string): string {
 export function maybeDownloadAddons(
 	addons: Record<string, string>,
 	addonsList: string[] = [],
+	paths?: CamoufoxPaths,
 ): void {
 	if (getAsBooleanFromENV("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", false)) {
 		console.log(
@@ -74,7 +76,7 @@ export function maybeDownloadAddons(
 	}
 
 	for (const addonName in addons) {
-		const addonPath = getAddonPath(addonName);
+		const addonPath = getAddonPath(addonName, paths);
 
 		if (fs.existsSync(addonPath)) {
 			addonsList.push(addonPath);
