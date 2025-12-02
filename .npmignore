@@ -1,0 +1,16 @@
+# Ignore source files
+src/
+*.ts
+!*.d.ts
+
+# Ignore configuration files
+tsconfig.json
+biome.json
+.yarnrc.yml
+pnpm-lock.yaml
+renovate.json
+.github/
+test/
+
+# Keep dist directory
+!dist/
