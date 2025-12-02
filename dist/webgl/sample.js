@@ -1,10 +1,17 @@
+import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { getDefaultLocalData, OS_ARCH_MATRIX, } from "../pkgman.js";
 // Get database path relative to this file
 function getDbPath(paths) {
     const localData = paths?.localData || getDefaultLocalData();
-    return path.join(localData.toString(), "webgl_data.db");
+    const dbPath = path.join(localData.toString(), "webgl_data.db");
+    // Ensure the directory exists
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+    }
+    return dbPath;
 }
 export async function sampleWebGL(os, vendor, renderer, paths) {
     if (!OS_ARCH_MATRIX[os]) {

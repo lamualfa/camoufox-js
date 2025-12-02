@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import {
@@ -9,7 +10,15 @@ import {
 // Get database path relative to this file
 function getDbPath(paths?: CamoufoxPaths): string {
 	const localData = paths?.localData || getDefaultLocalData();
-	return path.join(localData.toString(), "webgl_data.db");
+	const dbPath = path.join(localData.toString(), "webgl_data.db");
+
+	// Ensure the directory exists
+	const dbDir = path.dirname(dbPath);
+	if (!fs.existsSync(dbDir)) {
+		fs.mkdirSync(dbDir, { recursive: true });
+	}
+
+	return dbPath;
 }
 
 interface WebGLData {
