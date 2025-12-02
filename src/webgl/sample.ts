@@ -18,6 +18,27 @@ function getDbPath(paths?: CamoufoxPaths): string {
 		fs.mkdirSync(dbDir, { recursive: true });
 	}
 
+	// Check if database file exists and has the required table
+	if (fs.existsSync(dbPath)) {
+		try {
+			const testDb = new Database(dbPath, { readonly: true });
+			const tableExists = testDb
+				.prepare(
+					"SELECT name FROM sqlite_master WHERE type='table' AND name='webgl_fingerprints'",
+				)
+				.get();
+			testDb.close();
+
+			if (!tableExists) {
+				// Database exists but doesn't have the required table, remove it to trigger recreation
+				fs.unlinkSync(dbPath);
+			}
+		} catch (error) {
+			// If there's any error checking the database, remove it to be safe
+			fs.unlinkSync(dbPath);
+		}
+	}
+
 	return dbPath;
 }
 
