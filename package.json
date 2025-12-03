@@ -8,6 +8,14 @@
 			"import": "./dist/index.js",
 			"types": "./dist/index.d.ts"
 		},
+		"./dist/addons": {
+			"import": "./dist/addons.js",
+			"types": "./dist/addons.d.ts"
+		},
+		"./dist/addons.js": {
+			"import": "./dist/addons.js",
+			"types": "./dist/addons.d.ts"
+		},
 		"./addons": {
 			"import": "./dist/addons.js",
 			"types": "./dist/addons.d.ts"
@@ -15,6 +23,14 @@
 		"./addons.js": {
 			"import": "./dist/addons.js",
 			"types": "./dist/addons.d.ts"
+		},
+		"./dist/webgl/sample": {
+			"import": "./dist/webgl/sample.js",
+			"types": "./dist/webgl/sample.d.ts"
+		},
+		"./dist/webgl/sample.js": {
+			"import": "./dist/webgl/sample.js",
+			"types": "./dist/webgl/sample.d.ts"
 		},
 		"./webgl/sample": {
 			"import": "./dist/webgl/sample.js",
