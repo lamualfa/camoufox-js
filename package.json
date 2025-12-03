@@ -3,6 +3,28 @@
 	"version": "0.8.3",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./addons": {
+			"import": "./dist/addons.js",
+			"types": "./dist/addons.d.ts"
+		},
+		"./addons.js": {
+			"import": "./dist/addons.js",
+			"types": "./dist/addons.d.ts"
+		},
+		"./webgl/sample": {
+			"import": "./dist/webgl/sample.js",
+			"types": "./dist/webgl/sample.d.ts"
+		},
+		"./webgl/sample.js": {
+			"import": "./dist/webgl/sample.js",
+			"types": "./dist/webgl/sample.d.ts"
+		}
+	},
 	"scripts": {
 		"build": "rimraf dist && tsc && npm run copy-files",
 		"test": "vitest",
