@@ -32,12 +32,18 @@ export async function addDefaultAddons(
 	_excludeList: (keyof typeof DefaultAddons)[] = [],
 	_paths?: CamoufoxPaths,
 ): Promise<void> {
-	// TODO - enable addons
 	/**
 	 * Adds default addons, minus any specified in excludeList, to addonsList
 	 */
-	// const addons = Object.values(DefaultAddons).filter(addon => !excludeList.includes(addon as keyof typeof DefaultAddons));
-	// await maybeDownloadAddons(addons, addonsList, _paths);
+	const addonValues = Object.values(DefaultAddons);
+	const filteredAddons = addonValues.filter(
+		(addon) => !_excludeList.includes(addon as keyof typeof DefaultAddons),
+	);
+	const addons: Record<string, string> = {};
+	for (const addon of filteredAddons) {
+		addons[addon] = addon;
+	}
+	await maybeDownloadAddons(addons, _addonsList, _paths);
 }
 
 /**
