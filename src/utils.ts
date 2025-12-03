@@ -621,9 +621,15 @@ export async function launchOptions({
 	// Add the default addons
 	await addDefaultAddons(addons, exclude_addons, launch_options.paths);
 
-	// Confirm all addon paths are valid
+	// Confirm all addon paths are valid (only for local paths, not URLs)
 	if (addons.length > 0) {
-		confirmPaths(addons);
+		// Filter out URLs and only validate local paths
+		const localAddonPaths = addons.filter(
+			(addon) => !addon.startsWith("http://") && !addon.startsWith("https://"),
+		);
+		if (localAddonPaths.length > 0) {
+			confirmPaths(localAddonPaths);
+		}
 		config.addons = addons;
 	}
 
