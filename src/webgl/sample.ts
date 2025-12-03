@@ -39,6 +39,86 @@ function getDbPath(paths?: CamoufoxPaths): string {
 		}
 	}
 
+	// If database doesn't exist, create it with the required schema
+	if (!fs.existsSync(dbPath)) {
+		try {
+			const db = new Database(dbPath);
+
+			// Create the webgl_fingerprints table
+			db.exec(`
+				CREATE TABLE IF NOT EXISTS webgl_fingerprints (
+					vendor TEXT NOT NULL,
+					renderer TEXT NOT NULL,
+					data TEXT NOT NULL,
+					win INTEGER NOT NULL DEFAULT 0,
+					mac INTEGER NOT NULL DEFAULT 0,
+					lin INTEGER NOT NULL DEFAULT 0,
+					PRIMARY KEY (vendor, renderer)
+				)
+			`);
+
+			// Check if there's a source database to copy data from
+			const sourceDbPath = path.join(
+				import.meta.dirname,
+				"..",
+				"data-files",
+				"webgl_data.db",
+			);
+			if (fs.existsSync(sourceDbPath) && sourceDbPath !== dbPath) {
+				try {
+					const sourceDb = new Database(sourceDbPath, { readonly: true });
+
+					// Check if source has the table
+					const sourceTableExists = sourceDb
+						.prepare(
+							"SELECT name FROM sqlite_master WHERE type='table' AND name='webgl_fingerprints'",
+						)
+						.get();
+
+					if (sourceTableExists) {
+						// Copy data from source database
+						const rows = sourceDb
+							.prepare("SELECT * FROM webgl_fingerprints")
+							.all() as Array<{
+							vendor: string;
+							renderer: string;
+							data: string;
+							win?: number;
+							mac?: number;
+							lin?: number;
+						}>;
+						const insert = db.prepare(
+							"INSERT OR REPLACE INTO webgl_fingerprints (vendor, renderer, data, win, mac, lin) VALUES (?, ?, ?, ?, ?, ?)",
+						);
+
+						for (const row of rows) {
+							insert.run(
+								row.vendor,
+								row.renderer,
+								row.data,
+								row.win || 0,
+								row.mac || 0,
+								row.lin || 0,
+							);
+						}
+					}
+
+					sourceDb.close();
+				} catch (copyError) {
+					console.warn(
+						"Warning: Could not copy data from source database:",
+						copyError,
+					);
+				}
+			}
+
+			db.close();
+		} catch (error) {
+			console.error("Error creating database:", error);
+			throw error;
+		}
+	}
+
 	return dbPath;
 }
 
