@@ -1,4 +1,11 @@
 export {
+	addDefaultAddons,
+	confirmPaths,
+	DefaultAddons,
+	downloadAndExtract,
+	maybeDownloadAddons,
+} from "./addons.js";
+export {
 	type CamoufoxPaths,
 	getDefaultInstallDir,
 	getDefaultLaunchFile,
