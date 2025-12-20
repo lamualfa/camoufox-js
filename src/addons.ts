@@ -62,7 +62,21 @@ export async function downloadAndExtract(
  * Returns a path to the addon
  */
 function getAddonPath(addonName: string, paths?: CamoufoxPaths): string {
-	return getPath(join("addons", addonName), paths);
+	// If addonName is a URL, create a sanitized name from it
+	let sanitizedName = addonName;
+	if (addonName.startsWith("http://") || addonName.startsWith("https://")) {
+		// Extract the last part of the URL and create a hash for uniqueness
+		const urlParts = addonName.split("/");
+		const lastPart = urlParts[urlParts.length - 1] || "addon";
+		// Remove file extension if present
+		const nameWithoutExt = lastPart.replace(/\.[^/.]+$/, "");
+		// Create a simple hash from the URL to ensure uniqueness
+		const hash = addonName
+			.split("")
+			.reduce((acc, char) => acc + char.charCodeAt(0), 0);
+		sanitizedName = `${nameWithoutExt}-${hash}`;
+	}
+	return getPath(join("addons", sanitizedName), paths);
 }
 
 /**
@@ -91,7 +105,11 @@ export async function maybeDownloadAddons(
 
 		try {
 			fs.mkdirSync(addonPath, { recursive: true });
-			await downloadAndExtract(addons[addonName], addonPath, addonName);
+			// Use the original addonName for display purposes
+			const displayName = addonName.startsWith("http")
+				? addonName.split("/").pop() || addonName
+				: addonName;
+			await downloadAndExtract(addons[addonName], addonPath, displayName);
 			addonsList.push(addonPath);
 		} catch (e) {
 			console.error(`Failed to download and extract ${addonName}: ${e}`);
