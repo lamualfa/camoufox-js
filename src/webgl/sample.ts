@@ -3,14 +3,14 @@ import path from "node:path";
 import Database from "better-sqlite3";
 import {
 	type CamoufoxPaths,
-	getDefaultLocalData,
+	getDefaultDataDirectory,
 	OS_ARCH_MATRIX,
 } from "../pkgman.js";
 
 // Get database path relative to this file
 function getDbPath(paths?: CamoufoxPaths): string {
-	const localData = paths?.localData || getDefaultLocalData();
-	const dbPath = path.join(localData.toString(), "webgl_data.db");
+	const dataDirectory = paths?.dataDirectory || getDefaultDataDirectory();
+	const dbPath = path.join(dataDirectory.toString(), "webgl_data.db");
 
 	// Ensure the directory exists
 	const dbDir = path.dirname(dbPath);

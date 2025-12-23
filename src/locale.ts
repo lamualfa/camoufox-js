@@ -12,7 +12,7 @@ import {
 	UnknownTerritory,
 } from "./exceptions.js";
 import { validateIP } from "./ip.js";
-import { GitHubDownloader, INSTALL_DIR, webdl } from "./pkgman.js";
+import { GitHubDownloader, INSTALLATION_DIRECTORY, webdl } from "./pkgman.js";
 import { getAsBooleanFromENV } from "./utils.js";
 import { LeakWarning } from "./warnings.js";
 
@@ -155,7 +155,7 @@ function joinUnique(seq: string[]): string {
 	return seq.filter((x) => !seen.has(x) && seen.add(x)).join(", ");
 }
 
-const MMDB_FILE = path.join(INSTALL_DIR.toString(), "GeoLite2-City.mmdb");
+const MMDB_FILE = path.join(INSTALLATION_DIRECTORY.toString(), "GeoLite2-City.mmdb");
 const MMDB_REPO = "P3TERX/GeoLite.mmdb";
 
 class MaxMindDownloader extends GitHubDownloader {

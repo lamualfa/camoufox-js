@@ -31,7 +31,7 @@ import { geoipAllowed, getGeolocation, handleLocales } from "./locale.js";
 import FONTS from "./mappings/fonts.config.js";
 import {
 	type CamoufoxPaths,
-	getDefaultLocalData,
+	getDefaultDataDirectory,
 	getPath,
 	installedVerStr,
 	launchPath,

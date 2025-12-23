@@ -32,9 +32,9 @@ You can customize the paths used by Camoufox by providing a `paths` configuratio
 import { Camoufox, type CamoufoxPaths } from 'camoufox-js';
 
 const customPaths: CamoufoxPaths = {
-  installDir: '/custom/install/dir',    // Directory where Camoufox is installed
-  localData: '/custom/data/dir',      // Directory containing local data files
-  launchFile: {                       // Launch file name for each OS
+  installationDirectory: '/custom/install/dir',    // Directory where Camoufox is installed
+  dataDirectory: '/custom/data/dir',      // Directory containing local data files
+  executableNames: {                       // Executable names for each OS
     win: 'custom.exe',
     mac: '../MacOS/custom',
     lin: 'custom-bin'
@@ -73,7 +73,7 @@ import { firefox } from 'playwright-core';
 // you might need to run `npx camoufox-js fetch` to download the browser after installing the package
 
 const customPaths: CamoufoxPaths = {
-  installDir: '/custom/install/dir'
+  installationDirectory: '/custom/install/dir'
 };
 
 const server = await launchServer({

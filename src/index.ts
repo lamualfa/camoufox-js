@@ -7,9 +7,9 @@ export {
 } from "./addons.js";
 export {
 	type CamoufoxPaths,
-	getDefaultInstallDir,
-	getDefaultLaunchFile,
-	getDefaultLocalData,
+	getDefaultInstallationDirectory,
+	getDefaultExecutableNames,
+	getDefaultDataDirectory,
 } from "./pkgman.js";
 export { launchServer } from "./server.js";
 export { Camoufox, NewBrowser } from "./sync_api.js";

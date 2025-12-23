@@ -7,9 +7,9 @@ import { ALLOW_GEOIP, downloadMMDB, removeMMDB } from "./locale.js";
 import {
 	CamoufoxFetcher,
 	type CamoufoxPaths,
-	getDefaultInstallDir,
-	getDefaultLaunchFile,
-	getDefaultLocalData,
+	getDefaultInstallationDirectory,
+	getDefaultExecutableNames,
+	getDefaultDataDirectory,
 	installedVerStr,
 } from "./pkgman.js";
 import { launchServer } from "./server.js";
@@ -71,11 +71,11 @@ class CamoufoxUpdate extends CamoufoxFetcher {
 	}
 
 	async cleanup(): Promise<boolean> {
-		const installDir = this.customPaths?.installDir || getDefaultInstallDir();
-		if (!existsSync(installDir)) {
+		const installationDirectory = this.customPaths?.installationDirectory || getDefaultInstallationDirectory();
+		if (!existsSync(installationDirectory)) {
 			return false;
 		}
-		await rmSync(installDir, { recursive: true, force: true });
+		await rmSync(installationDirectory, { recursive: true, force: true });
 		console.log("Camoufox binaries removed!");
 		return true;
 	}
@@ -92,21 +92,21 @@ program
 		const customPaths: CamoufoxPaths = {};
 
 		if (options.installDir) {
-			customPaths.installDir = options.installDir;
+			customPaths.installationDirectory = options.installDir;
 		}
 		if (options.dataDir) {
-			customPaths.localData = options.dataDir;
+			customPaths.dataDirectory = options.dataDir;
 		}
 		if (options.launchFile) {
 			// Parse launch file option in format "win:exe,mac:app,lin:bin"
-			const launchFiles: { [key: string]: string } = {};
+			const executableNames: { [key: string]: string } = {};
 			options.launchFile.split(",").forEach((file: string) => {
 				const [os, path] = file.split(":");
 				if (os && path) {
-					launchFiles[os.trim()] = path.trim();
+					executableNames[os.trim()] = path.trim();
 				}
 			});
-			customPaths.launchFile = launchFiles;
+			customPaths.executableNames = executableNames;
 		}
 
 		const updater = await CamoufoxUpdate.create(customPaths);
@@ -163,30 +163,30 @@ program
 		const customPaths: CamoufoxPaths = {};
 
 		if (options.installDir) {
-			customPaths.installDir = options.installDir;
+			customPaths.installationDirectory = options.installDir;
 		}
 		if (options.dataDir) {
-			customPaths.localData = options.dataDir;
+			customPaths.dataDirectory = options.dataDir;
 		}
 		if (options.launchFile) {
 			// Parse launch file option in format "win:exe,mac:app,lin:bin"
-			const launchFiles: { [key: string]: string } = {};
+			const executableNames: { [key: string]: string } = {};
 			options.launchFile.split(",").forEach((file: string) => {
 				const [os, path] = file.split(":");
 				if (os && path) {
-					launchFiles[os.trim()] = path.trim();
+					executableNames[os.trim()] = path.trim();
 				}
 			});
-			customPaths.launchFile = launchFiles;
+			customPaths.executableNames = executableNames;
 		}
 
-		const installDir = customPaths.installDir || getDefaultInstallDir();
-		const localData = customPaths.localData || getDefaultLocalData();
-		const launchFile = customPaths.launchFile || getDefaultLaunchFile();
+		const installationDirectory = customPaths.installationDirectory || getDefaultInstallationDirectory();
+		const dataDirectory = customPaths.dataDirectory || getDefaultDataDirectory();
+		const executableNames = customPaths.executableNames || getDefaultExecutableNames();
 
-		console.log(`Install Directory: ${installDir}`);
-		console.log(`Data Directory: ${localData}`);
-		console.log(`Launch Files: ${JSON.stringify(launchFile)}`);
+		console.log(`Install Directory: ${installationDirectory}`);
+		console.log(`Data Directory: ${dataDirectory}`);
+		console.log(`Launch Files: ${JSON.stringify(executableNames)}`);
 	});
 
 program.command("version").action(async () => {
